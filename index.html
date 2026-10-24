@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>楊梅考場：堆高機巡檢大冒險 v22.0 (全照片 JPG 規格修正版)</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Microsoft JhengHei", "PingFang TC", sans-serif; }
+        body { background-color: #1E222A; color: #ABB2BF; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 10px; }
+        
+        #game-container { width: 1200px; max-width: 98vw; background: #21252B; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); overflow: hidden; display: flex; flex-direction: column; }
+        
+        #char-select-screen { padding: 35px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; }
+        #char-select-screen h1 { color: #E5C07B; font-size: 28px; margin-bottom: 12px; font-weight: bold; }
+        #char-select-screen p { color: #ABB2BF; font-size: 15px; margin-bottom: 25px; }
+        .char-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; width: 100%; max-width: 920px; margin-bottom: 25px; }
+        .char-card { background: #282C34; border: 2px solid #3E4451; border-radius: 10px; padding: 20px; cursor: pointer; transition: all 0.2s ease-in-out; text-align: center; }
+        .char-card:hover, .char-card.selected { border-color: #61AFEF; transform: translateY(-4px); background: #2C313A; }
+        .char-card.selected { box-shadow: 0 0 16px rgba(97, 175, 239, 0.45); }
+        .char-avatar { font-size: 48px; margin-bottom: 8px; }
+        .char-name { font-size: 18px; font-weight: bold; margin-bottom: 4px; }
+        .char-skill { font-size: 13px; color: #98C379; font-weight: bold; }
+        .start-btn { background: #98C379; color: #1E222A; font-size: 19px; font-weight: bold; padding: 12px 40px; border: none; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+        .start-btn:hover { background: #B5E896; box-shadow: 0 0 12px rgba(152, 195, 121, 0.5); }
+
+        #main-game-screen { display: none; flex-direction: column; width: 100%; }
+        
+        .hud-bar { background: #282C34; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1E222A; }
+        .hud-boss, .hud-player, .hud-timer { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: bold; }
+        .hud-boss { color: #E06C75; }
+        .hud-player { color: #61AFEF; }
+        .hud-timer { color: #E5C07B; background: #1E222A; padding: 6px 14px; border-radius: 20px; border: 1px solid #E5C07B; }
+        .hp-bar-bg { width: 130px; height: 16px; background: #3E4451; border-radius: 8px; overflow: hidden; display: inline-block; border: 1px solid #1E222A; }
+        .hp-bar-fill { height: 100%; background: #E06C75; width: 100%; transition: width 0.3s ease-in-out; }
+
+        .map-bar { background: #21252B; padding: 8px 16px; border-bottom: 1px solid #282C34; }
+        .map-grid { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 5px; }
+        .map-btn { width: 36px; height: 30px; background: #3B4252; color: #FFF; border: none; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.15s; }
+        .map-btn.current { background: #61AFEF; color: #000; font-size: 13px; }
+        .map-btn.answered { background: #98C379; color: #000; }
+        .map-btn.marked { background: #E5C07B; color: #000; }
+
+        .game-body { display: grid; grid-template-columns: 1fr 320px; gap: 16px; padding: 16px; width: 100%; }
+        .left-panel { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+        
+        .question-title { font-size: 20px; font-weight: bold; color: #61AFEF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .image-desc-container { display: flex; gap: 14px; background: #282C34; padding: 14px; border-radius: 10px; border: 1px solid #3E4451; min-width: 0; }
+        .item-image { width: 360px; height: 230px; background: #181A1F; border-radius: 8px; object-fit: contain; border: 1px solid #3E4451; flex-shrink: 0; padding: 2px; }
+        .item-desc { flex: 1; font-size: 17px; font-weight: bold; color: #FFE87C; line-height: 1.55; background: #21252B; padding: 14px; border-radius: 8px; border: 1px solid #3E4451; display: flex; align-items: center; min-width: 0; word-break: break-word; }
+
+        .battle-stage { background: #181A1F; border-radius: 10px; padding: 12px 20px; height: 165px; display: flex; justify-content: space-between; align-items: center; position: relative; border: 1px solid #3E4451; overflow: hidden; min-width: 0; }
+        .stage-char { font-size: 64px; text-align: center; flex-shrink: 0; }
+        .stage-dialog { background: #282C34; border: 2px solid #61AFEF; padding: 10px 14px; border-radius: 10px; max-width: 400px; font-size: 15px; font-weight: bold; color: #FFF; line-height: 1.45; text-align: center; flex: 1; margin: 0 10px; }
+        .hit-effect { position: absolute; font-size: 28px; font-weight: bold; color: #FF5555; text-shadow: 0 0 10px #FF0000; animation: floatUp 0.8s ease-out forwards; display: none; left: 50%; top: 25%; transform: translateX(-50%); }
+        @keyframes floatUp { 0% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, -30px); } }
+
+        .action-bar { display: flex; gap: 12px; align-items: center; }
+        .choice-btn { flex: 1; padding: 14px; font-size: 18px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; color: #FFF; transition: 0.2s; }
+        .btn-normal { background: #28A745; } .btn-normal:hover { background: #34CE57; }
+        .btn-abnormal { background: #DC3545; } .btn-abnormal:hover { background: #FF4757; }
+        .btn-mark { background: #E5C07B; color: #1E222A; width: 125px; flex-shrink: 0; }
+
+        .right-panel { background: #282C34; padding: 12px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; border: 1px solid #3E4451; width: 320px; flex-shrink: 0; }
+        .panel-title { font-size: 16px; font-weight: bold; color: #E5C07B; margin-bottom: 10px; }
+        .mosaic-grid { display: grid; grid-template-columns: repeat(4, 68px); grid-template-rows: repeat(5, 54px); gap: 4px; background: #1E222A; padding: 6px; border-radius: 8px; width: 296px; }
+        .mosaic-tile { width: 68px; height: 54px; background-color: #3B4252; border: 1px solid #21252B; display: flex; justify-content: center; align-items: center; font-size: 12px; font-weight: bold; color: #D8DEE9; background-size: 272px 270px; filter: blur(6px) brightness(0.3); transition: all 0.4s ease-in-out; }
+        .mosaic-tile.unlocked { filter: none; border-color: #98C379; color: transparent; }
+        .mosaic-tile.error { filter: grayscale(1) brightness(0.2); border-color: #E06C75; }
+
+        .event-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 100; }
+        .event-box { background: #282C34; padding: 25px; border-radius: 12px; max-width: 480px; text-align: center; border: 2px solid #E5C07B; box-shadow: 0 0 25px rgba(229, 192, 123, 0.4); }
+        .event-box h3 { color: #E5C07B; margin-bottom: 12px; font-size: 20px; font-weight: bold; }
+        .event-box p { font-size: 16px; margin-bottom: 20px; line-height: 1.55; color: #ECEFF4; }
+        .event-btns { display: flex; gap: 10px; justify-content: center; }
+        .event-btn { padding: 10px 20px; font-size: 15px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; color: #FFF; transition: 0.2s; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="char-select-screen">
+        <h1>⚔️ 楊梅第一站：堆高機巡檢大冒險 v22.0</h1>
+        <p>請選擇您的巡檢英雄角色（全照片 JPG 規格專用版）：</p>
+        <div class="char-grid">
+            <div class="char-card selected" onclick="selectChar('WARRIOR_M', this)">
+                <div class="char-avatar">👨‍🎤</div>
+                <div class="char-name">聖殿勇者 (男)</div>
+                <div class="char-skill">招式: 女武神三段斬</div>
+            </div>
+            <div class="char-card" onclick="selectChar('WARRIOR_F', this)">
+                <div class="char-avatar">👩‍🎤</div>
+                <div class="char-name">女武神勇者 (女)</div>
+                <div class="char-skill">招式: 女武神三段斬</div>
+            </div>
+            <div class="char-card" onclick="selectChar('MAGE_M', this)">
+                <div class="char-avatar">🧙‍♂️</div>
+                <div class="char-name">元素導師 (男)</div>
+                <div class="char-skill">招式: 爆裂點檢火球</div>
+            </div>
+            <div class="char-card" onclick="selectChar('MAGE_F', this)">
+                <div class="char-avatar">🧙‍♀️</div>
+                <div class="char-name">大魔導士 (女)</div>
+                <div class="char-skill">招式: 爆裂點檢火球</div>
+            </div>
+            <div class="char-card" onclick="selectChar('ARCHER_M', this)">
+                <div class="char-avatar">🏹</div>
+                <div class="char-name">疾風獵手 (男)</div>
+                <div class="char-skill">招式: 月光神箭</div>
+            </div>
+            <div class="char-card" onclick="selectChar('ARCHER_F', this)">
+                <div class="char-avatar">🧝‍♀️</div>
+                <div class="char-name">月光巡林者 (女)</div>
+                <div class="char-skill">招式: 月光神箭</div>
+            </div>
+        </div>
+        <button class="start-btn" onclick="startGame()">🔒 鎖定角色，進入 15 分鐘計時巡檢考驗！</button>
+    </div>
+
+    <div id="main-game-screen">
+        <div class="hud-bar">
+            <div class="hud-player">
+                <span id="hud-player-avatar">👨‍🎤</span>
+                <span id="hud-player-name">聖殿勇者</span>
+                <span style="font-size: 13px; color: #ABB2BF;">(🔒角色已鎖定)</span>
+                <span style="margin-left: 12px;">考場容錯分: <span id="hud-score" style="color:#98C379;">5 / 5 分</span></span>
+            </div>
+            <div class="hud-timer">
+                ⏳ 剩餘時間: <span id="hud-timer-text" style="color:#E5C07B; font-size:18px; font-weight:bold;">15:00</span>
+            </div>
+            <div class="hud-boss">
+                <span id="hud-boss-avatar">👹</span>
+                <span>監評大魔王</span>
+                <div class="hp-bar-bg"><div id="boss-hp-fill" class="hp-bar-fill"></div></div>
+                <span id="hud-boss-hp">100/100</span>
+            </div>
+        </div>
+
+        <div class="map-bar">
+            <div style="font-size: 13px; font-weight: bold; color: #ABB2BF;">📌 關卡地圖（限時 15 分鐘 | 精準 5 題異常 | 答錯 3 題或逾時立刻 GG淘汰）：</div>
+            <div class="map-grid" id="map-grid"></div>
+        </div>
+
+        <div class="game-body">
+            <div class="left-panel">
+                <div class="question-title" id="item-title">第 01 關：冷卻液 (靜態檢查)</div>
+                <div class="image-desc-container">
+                    <img id="item-img" class="item-image" src="images/1.jpg" alt="項目特寫" onerror="handleImgError(this)">
+                    <div id="item-desc" class="item-desc">載入觀察描述中...</div>
+                </div>
+
+                <div class="battle-stage">
+                    <div class="stage-char" id="stage-player-avatar">👨‍🎤</div>
+                    <div class="stage-dialog" id="stage-dialog-text">準備好接受楊梅第一站巡檢考驗了嗎？！</div>
+                    <div class="stage-char" id="stage-boss-avatar">👹</div>
+                    <div id="hit-effect" class="hit-effect">-15 HP!</div>
+                </div>
+
+                <div class="action-bar">
+                    <button class="choice-btn btn-normal" onclick="makeChoice('NORMAL')">🟢 判定正常 (按 1)</button>
+                    <button class="choice-btn btn-abnormal" onclick="makeChoice('ABNORMAL')">🚨 判定異常 (按 2)</button>
+                    <button class="choice-btn btn-mark" onclick="toggleMark()">⭐️ 標記復查</button>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <div class="panel-title">📜 中華民國技術士證 (20塊解鎖)</div>
+                <div class="mosaic-grid" id="mosaic-grid"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="event-modal" class="event-modal">
+    <div class="event-box">
+        <h3 id="event-title">⚡ 關鍵考場任務</h3>
+        <p id="event-desc">任務描述...</p>
+        <div class="event-btns" id="event-btns"></div>
+    </div>
+</div>
+
+<script>
+    // 智慧偵測 JPG 證照圖片路徑
+    const CERT_POSSIBLE_PATHS = [
+        'cert.jpg',
+        '中華民國技術士證.jpg',
+        'images/cert.jpg',
+        'images/中華民國技術士證.jpg',
+        './cert.jpg',
+        './中華民國技術士證.jpg'
+    ];
+
+    function autoDetectCertImage() {
+        let loaded = false;
+        CERT_POSSIBLE_PATHS.forEach(path => {
+            let img = new Image();
+            img.onload = function() {
+                if (!loaded) {
+                    loaded = true;
+                    let style = document.createElement('style');
+                    style.innerHTML = `.mosaic-tile { background-image: url('${encodeURI(path)}') !important; }`;
+                    document.head.appendChild(style);
+                }
+            };
+            img.src = path;
+        });
+    }
+    autoDetectCertImage();
+
+    const RAW_IMG_NAMES = [
+        '1-冷卻液.jpg', '2-機油量.jpg', '3-電瓶.jpg', '4-煞車油量.jpg', '5-液壓油量.jpg',
+        '6-離合器吋動踏板作動.jpg', '7-煞車踏板作動.jpg', '8-駐車煞車拉柄 (踏板).jpg', 
+        '9-安全帶裝置.jpg', '10-目測輸胎胎壓.jpg', '11-輪胎固定螺絲.jpg', '12.喇叭作用.jpg',
+        '13-充電、機油指示燈.jpg', '14-前照燈.jpg', '15-方向燈.jpg', '16-煞車燈.jpg',
+        '17-倒車燈、倒車警報器.jpg', '18-工作警示燈.jpg', '19-液壓紅與液壓油管洩漏.jpg',
+        '20-承載貨叉與貨叉固定銷.jpg'
+    ];
+
+    function handleImgError(imgEl) {
+        const itemId = activeItems[currentIdx] ? activeItems[currentIdx].id : 1;
+        const rawName = RAW_IMG_NAMES[itemId - 1];
+        
+        const srcList = [
+            `images/${itemId}.jpg`,
+            `images/${rawName}`,
+            `images/8-駐車煞車拉柄 (踏板).jpg`,
+            `images/8-駐車煞車拉柄_(踏板).jpg`,
+            `images/8-駐車煞車拉柄.jpg`,
+            `${rawName}`,
+            `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='420' height='260'><rect width='100%' height='100%' fill='%23181A1F'/><text x='50%' y='50%' fill='%2361AFEF' font-size='20' font-weight='bold' text-anchor='middle'>📷 項目 ${itemId} 特寫照片 (.jpg)</text></svg>`
+        ];
+
+        let curTry = parseInt(imgEl.getAttribute('data-try') || 0) + 1;
+        if (curTry < srcList.length) {
+            imgEl.setAttribute('data-try', curTry);
+            imgEl.src = srcList[curTry];
+        }
+    }
+</script>
+</body>
+</html>
